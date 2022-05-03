@@ -1,4 +1,6 @@
-#from tkinter import *
+from tkinter import *
+from math import *
+import random as r
 
 # Specification of a MineField :
 # A MineField is a two-dimensional Field structure of size AxB
@@ -20,6 +22,34 @@
 # Optional :
 # Adding a time to see how fast a game of MineSweeper is solved
 # Make it so the first click done by the Player nor the Fields arround to it can be mine.
+class Field:
+    """
+    Class of the Minefield.
+    ...
+    Attributes
+    ----------
+    IsMine: Boolean
+        Determine if the field is mined (default is False)
+    IsRevealed: Boolean
+        Determine if the Field has been revealed (default is False)
+    SurroundingMine Integer:
+        How many mine are arround the Field (default is 0)
+
+    Methods
+    ----------
+    ReturnInfo: []
+        return the value contained in the Field class
+    """
+    def __init__(self):
+        self.IsMine=False
+        self.IsRevealed=False
+        self.SurroundingMine=0
+
+    def ReturnInfo(self):
+        """
+        Return the Field Values (debug feature)
+        """
+        return [self.IsMine,self.IsRevealed,self.SurroundingMine]
 
 class Minefield():
     """
@@ -33,49 +63,152 @@ class Minefield():
         a float used to determine the number of mine on the MineField
     struct : Field[][]
         Two dimensional structure of Field
+
+    Methods
+    ----------
+    PrintRevealedField()
+        Prints the revealed field, used to debug the program
+
+    fillMinefield(FirstCase int[])
+        place the mine in the minefield, the case arround the first click are not containing any mine
+
     """
     def __init__(self,size,difficulty):
         self.size=size
         self.difficulty=difficulty
-        self.struct=[]
+        self.minefield=[]
         for i in range(self.size[0]):
-            self.struct.append([])
+            self.minefield.append([])
             for j in range(self.size[1]):
-                self.struct[-1].append(self.Field())
-
+                self.minefield[-1].append(Field())
         """
         Parameters
         ----------
-        size= Integer[]
+        size: Integer[]
             Dimension of the MineField
-        difficulty = Float
+        difficulty: Float
             Float used to determine the number of Mine on a minefield
+        minefield Field[][]:
+            Two dimensional Field structure
         """
 
-    class Field:
+    def fillMinefield(self,FirstCase):
+        def BlackListField(FC):
+            # Start by defining wich case we don't put bomb in
+            # No need to exempt case that are out of bound, since there is no way for the program to look field that are out of bound
+            # BL_Mine (Blacklist Mine) will be the table containing the list of field wich can't have mine
+            BLMinefield =[]
+            BLField=[]
+            for i in range(FirstCase[0]-1,FirstCase[0]+2):
+                for j in range(FirstCase[1]-1,FirstCase[1]+2):
+                    BLField.append(i)
+                    BLField.append(j)
+                    BLMinefield.append(BLField)
+                    BLField=[]
+            return BLMinefield
+            """
+            Return a List of Field that can't contain a mine
+            ...
+            Parameters
+            ----------
+            FC: Integer[]
+                Coordinate of the first revealed Field
+            """
+
+        def IsOutOfBound(FC):
+            if (FC[0]<0 or FC[0]>self.size[0]) or (FC[1]<0 or FC[1]>self.size[1]):
+                    return True
+            return False
+            """
+            Return whether the coordinate checked for is out of the minefield or not
+            ...
+            Parameters
+            ----------
+            FC: Integer[]
+                Coordinate of the Field checked
+            """
+        def MineArround(FC):
+            NbrMine=0
+            for i in range(FC[0]-1,FC[0]+2):
+                for j in range(FC[1]-1,FC[1]+2):
+                    if not IsOutOfBound([i,j]):
+                        if self.minefield[i][j].IsMine:
+                            NbrMine+=1
+            return NbrMine
+            """
+            Return the number of mine arround the Field Checked
+            ...
+            Parameters
+            ----------
+            FC: Integer[]
+                Coordinate of the Field Checked
+            """
+        def UpdateNbrMine():
+            for i in range(self.size[0]-1):
+                for j in range(self.size[1]-1):
+                    if not self.minefield[i][j].IsMine:
+                        self.minefield[i][j].SurroundingMine = MineArround([i,j])
+            """
+            Update the Field value field.SurroundingMine accross the Minefield structure table
+            """
+
+        NbrMine = int(ceil(self.difficulty*(self.size[0]*self.size[1])))
+        PlacedMine =0
+        BLMF = BlackListField(FirstCase)
+
+        while NbrMine != PlacedMine:
+            RandField= [r.randint(0,self.size[0]-1),r.randint(0,self.size[1]-1)]
+            if RandField not in BLMF:
+                if not self.minefield[RandField[0]][RandField[1]].IsMine:
+                    self.minefield[RandField[0]][RandField[1]].IsMine = True
+                    PlacedMine+=1
+
+        UpdateNbrMine()
+
         """
-        Inner Class of the Minefield.
+        Place the mine in the MineField
         ...
-        Attributes
+        Parameters
         ----------
-        IsMine : Boolean
-            Determine if the field is mined (default is False)
-        IsRevealed : Boolean
-            Determine if the Field has been revealed (default is False)
-        SurroundingMine Integer:
-            How many mine are arround the Field (default is 0)
+        FirstCase: Integer[]
+            a integer table of length 2, they are the coordinate of the first revealed case
+
+        Methods
+        ----------
+        BlackListField: Integer [][]
+            Return a List of Field that can't contain a mine
+
+        IsOutOfBound: Boolean
+            Return whether the coordinate checked for is out of the minefield or not
+
+        MineArround: Integer
+            Return the number of mine arround the Field Checked
+
+        UpdateNbrMine: None
+            Update the Field value field.SurroundingMine accross the Minefield structure table
         """
-        def __init__(self):
-            self.IsMine=False
-            self.IsRevealed=False
-            self.SurroundingMine=0
 
-        def ReturnIsMine(self):
-            """
-            Return the Field Values (debug feature)
-            """
-            return [self.IsMine,seld,IsRevealed,self.SurroundingMine]
+    def printRevealedField(self):
+        infoField=[]
+        for i in range(self.size[0]):
+            for j in range(self.size[1]):
+                infoField= self.minefield[i][j].ReturnInfo()
+                if infoField[0]:
+                    print("✹",end='')
+                else:
+                    print(str(infoField[2]),end='')
+                print("\t",end='')
+            print()
+        """
+        Minefield Method printing a revealed field, permits to debug the program.
+        """
 
+
+
+
+TestField = Minefield([10,10],0.2)
+TestField.fillMinefield([3,5])
+TestField.printRevealedField()
 
 # #Create & Configure root
 # root = Tk()
