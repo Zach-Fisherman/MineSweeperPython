@@ -43,6 +43,7 @@ class Field:
     def __init__(self):
         self.IsMine=False
         self.IsRevealed=False
+        self.IsFlagged=False
         self.SurroundingMine=0
 
     def ReturnInfo(self):
@@ -91,9 +92,21 @@ class Minefield():
         minefield Field[][]:
             Two dimensional Field structure
         """
+    def IsOutOfBound(self, FCoord):
+        if (FCoord[0]<0 or FCoord[0]>=self.size[0]) or (FCoord[1]<0 or FCoord[1]>=self.size[1]):
+                return True
+        return False
+        """
+        Return whether the coordinate checked for is out of the minefield or not
+        ...
+        Parameters
+        ----------
+        FCoord: Integer[]
+            Coordinate of the Field checked
+        """
 
-    def fillMinefield(self,FirstCase):
-        def BlackListField(FC):
+    def FillMinefield(self,FirstCase):
+        def BlackListField(FCoord):
             # Start by defining wich case we don't put bomb in
             # No need to exempt case that are out of bound, since there is no way for the program to look field that are out of bound
             # BL_Mine (Blacklist Mine) will be the table containing the list of field wich can't have mine
@@ -111,27 +124,15 @@ class Minefield():
             ...
             Parameters
             ----------
-            FC: Integer[]
+            FCoord: Integer[]
                 Coordinate of the first revealed Field
             """
 
-        def IsOutOfBound(FC):
-            if (FC[0]<0 or FC[0]>self.size[0]) or (FC[1]<0 or FC[1]>self.size[1]):
-                    return True
-            return False
-            """
-            Return whether the coordinate checked for is out of the minefield or not
-            ...
-            Parameters
-            ----------
-            FC: Integer[]
-                Coordinate of the Field checked
-            """
-        def MineArround(FC):
+        def MineArround(FCoord):
             NbrMine=0
-            for i in range(FC[0]-1,FC[0]+2):
-                for j in range(FC[1]-1,FC[1]+2):
-                    if not IsOutOfBound([i,j]):
+            for i in range(FCoord[0]-1,FCoord[0]+2):
+                for j in range(FCoord[1]-1,FCoord[1]+2):
+                    if not self.IsOutOfBound([i,j]):
                         if self.minefield[i][j].IsMine:
                             NbrMine+=1
             return NbrMine
@@ -140,12 +141,12 @@ class Minefield():
             ...
             Parameters
             ----------
-            FC: Integer[]
+            FCoord: Integer[]
                 Coordinate of the Field Checked
             """
         def UpdateNbrMine():
-            for i in range(self.size[0]-1):
-                for j in range(self.size[1]-1):
+            for i in range(self.size[0]):
+                for j in range(self.size[1]):
                     if not self.minefield[i][j].IsMine:
                         self.minefield[i][j].SurroundingMine = MineArround([i,j])
             """
@@ -188,27 +189,78 @@ class Minefield():
             Update the Field value field.SurroundingMine accross the Minefield structure table
         """
 
-    def printRevealedField(self):
-        infoField=[]
+    def PrintRevealedField(self):
+        InfoField=[]
         for i in range(self.size[0]):
             for j in range(self.size[1]):
-                infoField= self.minefield[i][j].ReturnInfo()
-                if infoField[0]:
+                InfoField= self.minefield[i][j].ReturnInfo()
+                if InfoField[0]:
                     print("✹",end='')
                 else:
-                    print(str(infoField[2]),end='')
+                    print(str(InfoField[2]),end='')
                 print("\t",end='')
             print()
         """
         Minefield Method printing a revealed field, permits to debug the program.
         """
 
+    def PrintVisibleField(self):
+        InfoField=[]
+        for i in range(self.size[0]):
+            for j in range(self.size[1]):
+                InfoField= self.minefield[i][j].ReturnInfo()
+                if(InfoField[1]):
+                    if InfoField[0]:
+                        print("✹",end='')
+                    else:
+                        print(str(InfoField[2]),end='')
+                else:
+                    print("▢",end='')
+                print("\t",end='')
+            print()
+        """
+        Minefield Method printing a field, permits to play the game
+        """
+
+
+    def IterRevealFieldZero(self, FCoord):
+        CoordA=FCoord[0]
+        CoordB=FCoord[1]
+        if self.IsOutOfBound([CoordA,CoordB]):
+            return 0
+
+        InfoField= self.minefield[CoordA][CoordB].ReturnInfo()
+        self.minefield[CoordA][CoordB].IsRevealed=True
+
+        if InfoField[2]!=0 or InfoField[1]:
+            return 0
+        else:
+            for i in range(CoordA-1,CoordA+2):
+                for j in range(CoordB-1,CoordB+2):
+                    if not (i==CoordA and j==CoordB):
+                        self.IterRevealFieldZero([i,j])
+        """
+        Permit to iteratively reveal all case with 0 mine arround them, also reveal the case adjacent to them if.
+        We return 0 to exit the program
+        """
+
+    # def RevealField(self,FCoord):
+    #     InfoField= self.minefield[FCoord[0]][FCoord[1]].ReturnInfo()
+    #     if not InfoField[0]:
+    #         self.minefield[FCoord[0]][FCoord[1]]
+    #     else:
+    #         #end the game if a bomb is found
+    #         self.PrintRevealedField()
+    #         return False
 
 
 
 TestField = Minefield([10,10],0.2)
-TestField.fillMinefield([3,5])
-TestField.printRevealedField()
+TestField.FillMinefield([3,5])
+TestField.IterRevealFieldZero([3,5])
+TestField.PrintVisibleField()
+print()
+TestField.PrintRevealedField()
 
 # #Create & Configure root
 # root = Tk()
